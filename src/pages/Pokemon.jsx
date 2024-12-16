@@ -18,21 +18,21 @@ function Pokemon() {
   const [checkedPokemons, setCheckedPokemons] = useState({});
 
   // Function to select Pokemon
-  const choosePokemon = (pokemon) => {
-    setPlayerPokemon({ ...pokemon, attacks: [...pokemon.attacks] });
+  // const choosePokemon = (pokemon) => {
+  //   setPlayerPokemon({ ...pokemon, attacks: [...pokemon.attacks] });
 
-    const randomOpponent = pokemonData[Math.floor(Math.random() * pokemonData.length)];
+  //   const randomOpponent = pokemonData[Math.floor(Math.random() * pokemonData.length)];
 
-    setOpponentPokemon({
-      ...randomOpponent, attacks: [...randomOpponent.attacks]
-    });
+  //   setOpponentPokemon({
+  //     ...randomOpponent, attacks: [...randomOpponent.attacks]
+  //   });
 
-    setMessage(`You chose ${pokemon.name}! Opponent sent out ${randomOpponent.name}!`);
+  //   setMessage(`You chose ${pokemon.name}! Opponent sent out ${randomOpponent.name}!`);
 
-    setIsPlayerTurn(true);
+  //   setIsPlayerTurn(true);
 
-    setAttacklogs([]);
-  };
+  //   setAttacklogs([]);
+  // };
 
   const selectTeam = (selectedPokemon, e) => {
     if (playerTeam.length < 3 && !playerTeam.includes(selectedPokemon)) {
@@ -52,10 +52,15 @@ function Pokemon() {
   };
 
 
-  const switchPlayerPokemon = (newPokemon) => {
-    if (playerTeam.includes(newPokemon)) {
-      setCurrentPlayerPokemon(newPokemon);
-      setMessage(`You switched to ${newPokemon.name}!`);
+  const switchPlayerPokemon = () => {
+    const nextPlayer = playerTeam.find(pokemon => pokemon.hp > 0 && pokemon !== currentPlayerPokemon);
+    if (nextPlayer) {
+      setCurrentPlayerPokemon(nextPlayer);
+      setMessage(`Player switched to ${nextPlayer.name}!`);
+      setIsPlayerTurn(false);
+      setTimeout(() => {
+        opponentAttack();
+      }, 1000);
     }
   };
 
