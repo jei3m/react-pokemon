@@ -1,4 +1,4 @@
-import { React, useState, useRef, useEffect } from 'react';
+import { React, useState, useRef } from 'react';
 import pokemonData from '../data/pokemonData';
 import { Button, Card, Alert, Checkbox } from 'antd';
 
@@ -20,7 +20,8 @@ function Pokemon() {
       setPlayerTeam([...playerTeam, {...selectedPokemon, hp: selectedPokemon.maxHp}]);
     }
   };
-
+  
+  // Function to start battle 
   const startBattle = () => {
     if (playerTeam.length < 3) {
       setMessage("You need to select 3 Pokemons to start a battle!")
@@ -65,7 +66,7 @@ function Pokemon() {
     return (
       <div className='h-6 bg-gray-300 rounded-full overflow-hidden relative'>
         <div className={`h-full ${getColor(widthPercentage)} absolute`} style={{ width: `${widthPercentage}%` }} />
-        <div className="h-full flex items-center justify-center relative z-10 font-semibold">
+        <div className="h-full flex items-center justify-center relative z-10 font-semibold text-sm md:text-[14px]">
           HP: {hp}/{maxHp}
         </div>  
       </div>
@@ -234,8 +235,6 @@ function Pokemon() {
     const playerHp = currentPlayerPokemon.hp - opponentDamage >= 0 ? currentPlayerPokemon.hp - opponentDamage : 0;
     const newPlayerHp = Math.max(0, currentPlayerPokemon.hp - opponentDamage);
 
-    // setCurrentPlayerPokemon({ ...currentPlayerPokemon, hp: playerHp });
-
     setCurrentPlayerPokemon(prev => ({...prev, hp: newPlayerHp}));
     setPlayerTeam(prev => prev.map(pokemon => pokemon.name === currentPlayerPokemon.name ? {...pokemon, hp: newPlayerHp} : pokemon));
 
@@ -272,7 +271,7 @@ function Pokemon() {
   };
 
   return (
-    <div className='bg-gray-100 min-h-screen min-w-screen p-0 md:p-8'>
+    <div className='bg-gray-100 min-h-screen min-w-screen p-4 md:p-8'>
       <div className="w-full min-h-[800px] bg-gray-100">
         <h1 className='text-3xl font-bold mb-4'>Pokemon Battle Game</h1>
 
@@ -387,7 +386,7 @@ function Pokemon() {
 
             <div className="flex justify-center gap-6">
               <div className='w-40 flex flex-col'> 
-                <h3 className='font-semibold text-sm'>Your Team</h3>
+                <h3 className='font-semibold text-sm'>Your Team:</h3>
                 {playerTeam.map(pokemon => (
                   <div key={pokemon.name}>
                     <img
@@ -408,7 +407,7 @@ function Pokemon() {
                 </div>
               </div>
               <div className='w-40'>
-                <h3 className='font-semibold text-sm'>Opponent Team</h3>
+                <h3 className='font-semibold text-sm'>Opponent:</h3>
                 {opponentTeam.map(pokemon => (
                   <div key={pokemon.name}>
                     <img
