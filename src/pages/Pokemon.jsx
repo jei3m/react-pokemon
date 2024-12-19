@@ -3,73 +3,45 @@ import pokemonData from '../data/pokemonData';
 import { Button, Card, Alert, Checkbox } from 'antd';
 
 function Pokemon() {
-  const [playerPokemon, setPlayerPokemon] = useState(null);
-  const [opponentPokemon, setOpponentPokemon] = useState(null);
+  const [playerTeam, setPlayerTeam] = useState([])
+  const [opponentTeam, setOpponentTeam] = useState([])
+  const [currentPlayerPokemon, setCurrentPlayerPokemon] = useState(null);
+  const [currentOpponentPokemon, setCurrentOpponentPokemon] = useState(null);
   const [message, setMessage] = useState("");
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [attacklogs, setAttacklogs] = useState([]);
   const [isAttacking, setIsAttacking] = useState(false);
   const attackSound = useRef(null);
   const missedSound = useRef(null);
-  const [playerTeam, setPlayerTeam] = useState([]);
-  const [opponentTeam, setOpponentTeam] = useState([]);
-  const [currentPlayerPokemon, setCurrentPlayerPokemon] = useState(null);
-  const [currentOpponentPokemon, setCurrentOpponentPokemon] = useState(null);
-  const [checkedPokemons, setCheckedPokemons] = useState({});
 
   // Function to select Pokemon
-  // const choosePokemon = (pokemon) => {
-  //   setPlayerPokemon({ ...pokemon, attacks: [...pokemon.attacks] });
-
-  //   const randomOpponent = pokemonData[Math.floor(Math.random() * pokemonData.length)];
-
-  //   setOpponentPokemon({
-  //     ...randomOpponent, attacks: [...randomOpponent.attacks]
-  //   });
-
-  //   setMessage(`You chose ${pokemon.name}! Opponent sent out ${randomOpponent.name}!`);
-
-  //   setIsPlayerTurn(true);
-
-  //   setAttacklogs([]);
-  // };
-
-  const selectTeam = (selectedPokemon, e) => {
+  const choosePokemon = (selectedPokemon) => {
     if (playerTeam.length < 3 && !playerTeam.includes(selectedPokemon)) {
-      setPlayerTeam([...playerTeam, selectedPokemon]);
-      setCheckedPokemons((prevCheckedPokemons) => ({ ...prevCheckedPokemons, [selectedPokemon.name]: true }));
+      setPlayerTeam([...playerTeam, {...selectedPokemon, hp: selectedPokemon.maxHp}]);
     }
   };
 
   const startBattle = () => {
-    if (playerTeam.length === 3 && opponentTeam.length === 3) {
-      setCurrentPlayerPokemon(playerTeam[0]);
-      setCurrentOpponentPokemon(opponentTeam[0]);
-      setMessage(`You sent out ${playerTeam[0].name}! Opponent sent out ${opponentTeam[0].name}!`);
-    } else {
-      setMessage("Both teams must have 3 Pokemons to start the battle.");
+    if (playerTeam.length < 3) {
+      setMessage("You need to select 3 Pokemons to start a battle!")
+      return;
     }
-  };
-
-
-  const switchPlayerPokemon = () => {
-    const nextPlayer = playerTeam.find(pokemon => pokemon.hp > 0 && pokemon !== currentPlayerPokemon);
-    if (nextPlayer) {
-      setCurrentPlayerPokemon(nextPlayer);
-      setMessage(`Player switched to ${nextPlayer.name}!`);
-      setIsPlayerTurn(false);
-      setTimeout(() => {
-        opponentAttack();
-      }, 1000);
+  
+    const selectedOpponentTeam = [];
+  
+    while (selectedOpponentTeam.length < 3) {
+      const randomOpponent = pokemonData[Math.floor(Math.random() * pokemonData.length)];
+      if (!selectedOpponentTeam.find(p => p.name === randomOpponent.name) && !playerTeam.find(p => p.name === randomOpponent.name)){
+        selectedOpponentTeam.push({...randomOpponent, hp: randomOpponent.maxHp});
+      }
     }
-  };
-
-  const switchOpponentPokemon = () => {
-    const nextOpponent = opponentTeam.find(pokemon => pokemon.hp > 0 && pokemon !== currentOpponentPokemon);
-    if (nextOpponent) {
-      setCurrentOpponentPokemon(nextOpponent);
-      setMessage(`Opponent switched to ${nextOpponent.name}!`);
-    }
+  
+    setOpponentTeam(selectedOpponentTeam);
+    setCurrentPlayerPokemon({...playerTeam[0], attacks: [...playerTeam[0].attacks]});
+    setCurrentOpponentPokemon({...selectedOpponentTeam[0], attacks: [...selectedOpponentTeam[0].attacks]});
+    setMessage(`You chose ${playerTeam[0].name}! While opponent sent out ${selectedOpponentTeam[0].name}!`);
+    setIsPlayerTurn(true);
+    setAttacklogs([]);
   };
 
   const resetGame = () => {
@@ -85,13 +57,17 @@ function Pokemon() {
 
   const renderLifeBar = (hp, maxHp) => {
     const widthPercentage = (hp / maxHp) * 100;
-    const percentagerounded = Number(widthPercentage.toFixed(0));
+    const getColor = (percentage) => {
+      if (percentage < 30) return 'bg-red-500';
+      if (percentage < 50) return 'bg-yellow-400';
+      return 'bg-green-500';
+    }
     return (
       <div className='h-6 bg-gray-300 rounded-full overflow-hidden relative'>
-        <div className="h-full bg-green-500 absolute" style={{ width: `${widthPercentage}%` }} />
+        <div className={`h-full ${getColor(widthPercentage)} absolute`} style={{ width: `${widthPercentage}%` }} />
         <div className="h-full flex items-center justify-center relative z-10 font-semibold">
           HP: {hp}/{maxHp}
-        </div>
+        </div>  
       </div>
     );
   };
@@ -101,15 +77,42 @@ function Pokemon() {
     setAttacklogs(prevLogs => [log, ...prevLogs]);
   };
 
+  const handleRetreat = () => {
+    const nextPlayerIndex = playerTeam.findIndex(pokemon => pokemon.name === currentPlayerPokemon.name) + 1;
+    if (nextPlayerIndex < playerTeam.length) {
+      const nextActivePokemon = playerTeam.slice(nextPlayerIndex).find(pokemon => pokemon.hp > 0);
+      if (nextActivePokemon) {
+        setCurrentPlayerPokemon({...nextActivePokemon, attacks: [...nextActivePokemon.attacks]});
+        setMessage(`You ${currentPlayerPokemon.name} retreated! You sent out ${nextActivePokemon.name}`)
+      } else {
+        setMessage(`You can't retreat! No other Pokemon are available! You lose`);
+        setIsPlayerTurn(false);
+      }
+
+    } else {
+      setMessage(`You can't retreat! No other Pokemon are available! You lose`);
+      setIsPlayerTurn(false);
+    }
+  };
+
   const playerAttack = (selectedAttack) => {
     if (isAttacking) return;
-
     setIsAttacking(true);
 
     if (!currentPlayerPokemon || !currentOpponentPokemon) {
-      setMessage("Choose your Pokemon to start battle");
+      setMessage("Choose your Pokemons to start the battle!");
       return;
-    };
+    }
+
+    const opponentAvailableAttacks = currentOpponentPokemon.attacks.filter((attack) => attack.uses > 0);
+    const totalOpponentAttackUses = opponentAvailableAttacks.reduce((total, attack) => total + attack.uses, 0);
+
+    if (totalOpponentAttackUses === 0) {
+      const log = `${currentOpponentPokemon.name} has no more attacks left! You Win!`;
+      setMessage(log);
+      addLog(log);
+      return;
+    }
 
     if (selectedAttack.uses <= 0) {
       const log = `${currentPlayerPokemon.name} has no uses for ${selectedAttack.name} left!`;
@@ -119,7 +122,7 @@ function Pokemon() {
     }
 
     if (Math.random() > selectedAttack.accuracy) {
-      const log = `${currentPlayerPokemon.name} tried to use ${selectedAttack.name} but missed!`;
+      const log = `${currentOpponentPokemon} tried to use ${selectedAttack.name} but missed!`;
       missedSound.current.play();
       setMessage(log);
       addLog(log);
@@ -137,18 +140,20 @@ function Pokemon() {
     }
 
     const playerDamage = selectedAttack.damage;
-    const opponentHp = currentOpponentPokemon.hp - playerDamage >= 0 ? currentOpponentPokemon.hp - playerDamage : 0;
+    const opponentHp = currentOpponentPokemon.hp - playerDamage >=0 ? currentOpponentPokemon.hp - playerDamage : 0;
+    const newOpponentHp = Math.max(0, currentOpponentPokemon.hp - playerDamage);
 
-    setCurrentOpponentPokemon({ ...currentOpponentPokemon, hp: opponentHp });
+    setCurrentOpponentPokemon(prev => ({...prev, hp: newOpponentHp}));
+    setOpponentTeam(prev => prev.map(pokemon => pokemon.name === currentOpponentPokemon.name ? {...pokemon, hp: newOpponentHp} : pokemon));
 
-    selectedAttack.uses -= 1;
+    selectedAttack.uses = 1;
 
     let commentary = "";
     if (playerDamage > 10) {
-      commentary = "It's super Effective";
+    commentary = "It's super Effective";
     }
     if ((selectedAttack?.name === "Confusion") && (Math.random() < 0.5)) {
-      commentary += `The opponent ${currentOpponentPokemon.name} is confused!`;
+    commentary += `The opponent ${currentOpponentPokemon.name} is confused!`;
     }
 
     const log = `You used ${selectedAttack.name} for ${playerDamage} damage! ${commentary}`;
@@ -157,21 +162,24 @@ function Pokemon() {
 
     if (opponentHp <= 0) {
       setCurrentOpponentPokemon({ ...currentOpponentPokemon, hp: 0 });
-      const nextOpponent = opponentTeam.find(pokemon => pokemon.hp > 0);
-      if (nextOpponent) {
-        switchOpponentPokemon();
+      const nextOpponentIndex = opponentTeam.findIndex(pokemon => pokemon.name === currentOpponentPokemon.name) + 1;
+      if (nextOpponentIndex < opponentTeam.length) {
+          setCurrentOpponentPokemon({ ...opponentTeam[nextOpponentIndex], attacks: [...opponentTeam[nextOpponentIndex].attacks] });
+          setMessage(`Opponent's ${currentOpponentPokemon.name} fainted! Opponent sent out ${opponentTeam[nextOpponentIndex].name}!`);
       } else {
-        setMessage(`You win! Your team wins!`);
-        setIsPlayerTurn(false);
-        setIsAttacking(false);
+          setMessage(`You win! All opponent's Pokemon fainted!`);
+          setIsPlayerTurn(false);
+          setIsAttacking(false);
+          return;
       }
     }
 
     setTimeout(() => {
-      setIsPlayerTurn(false);
-      opponentAttack();
-      setIsAttacking(false);
+    setIsPlayerTurn(false);
+    opponentAttack();
+    setIsAttacking(false);
     }, 1000);
+
   };
 
   const opponentAttack = () => {
@@ -189,15 +197,15 @@ function Pokemon() {
       return;
     }
 
-    // const playerAvailableAttacks = currentPlayerPokemon.attacks.filter((attack) => attack.uses > 0);
-    // const totalPlayerAttackUses = playerAvailableAttacks.reduce((total, attack) => total + attack.uses, 0);
+    const playerAvailableAttacks = currentPlayerPokemon.attacks.filter((attack) => attack.uses > 0);
+    const totalPlayerAttackUses = playerAvailableAttacks.reduce((total, attack) => total + attack.uses, 0);
 
-    // if (totalPlayerAttackUses === 0) {
-    //   const log = "Your pokemon has no more attacks left! You Lose!";
-    //   setMessage(log);
-    //   addLog(log);
-    //   return;
-    // }
+    if (totalPlayerAttackUses === 0) {
+      const log = "Your pokemon has no more attacks left! You Lose!";
+      setMessage(log);
+      addLog(log);
+      return;
+    }
 
     const selectedAttack = availableAttacks[Math.floor(Math.random() * availableAttacks.length)];
 
@@ -224,10 +232,14 @@ function Pokemon() {
 
     const opponentDamage = selectedAttack.damage;
     const playerHp = currentPlayerPokemon.hp - opponentDamage >= 0 ? currentPlayerPokemon.hp - opponentDamage : 0;
+    const newPlayerHp = Math.max(0, currentPlayerPokemon.hp - opponentDamage);
 
-    setCurrentPlayerPokemon({ ...currentPlayerPokemon, hp: playerHp });
+    // setCurrentPlayerPokemon({ ...currentPlayerPokemon, hp: playerHp });
 
-    selectedAttack.uses -= 1;
+    setCurrentPlayerPokemon(prev => ({...prev, hp: newPlayerHp}));
+    setPlayerTeam(prev => prev.map(pokemon => pokemon.name === currentPlayerPokemon.name ? {...pokemon, hp: newPlayerHp} : pokemon));
+
+    selectedAttack.uses = 1;
 
     let commentary = "";
     if (opponentDamage > 10) {
@@ -243,62 +255,21 @@ function Pokemon() {
 
     if (playerHp <= 0) {
       setCurrentPlayerPokemon({ ...currentPlayerPokemon, hp: 0 });
-      const nextPlayer = playerTeam.find(pokemon => pokemon.hp > 0);
-      if (nextPlayer) {
-        switchPlayerPokemon(nextPlayer);
+      const nextPlayerIndex = playerTeam.findIndex(pokemon => pokemon.name === currentPlayerPokemon.name) + 1;
+      if (nextPlayerIndex < playerTeam.length) {
+        setCurrentPlayerPokemon({ ...playerTeam[nextPlayerIndex], attacks: [...playerTeam[nextPlayerIndex].attacks] });
+        setMessage(`Your ${currentPlayerPokemon.name} fainted! You sent out ${playerTeam[nextPlayerIndex].name}!`);
       } else {
-        setMessage(`You lose! Opponent's team wins!`);
+        setMessage(`You lose! All your Pokemon fainted!`);
         setIsPlayerTurn(false);
+        return;
       }
     }
-
-    const playerAvailableAttacks = currentPlayerPokemon.attacks.filter((attack) => attack.uses > 0);
-    const totalPlayerAttackUses = playerAvailableAttacks.reduce((total, attack) => total + attack.uses, 0);
-    
-    if (totalPlayerAttackUses === 0) {
-      const log = `${currentPlayerPokemon.name} has no more attacks left! Switching to next Pokemon...`;
-      setMessage(log);
-      addLog(log);
-    
-      // Check if playerTeam is correctly structured and accessible
-      const nextPlayer = playerTeam.find(pokemon => 
-        pokemon.attacks.some(attack => attack.uses > 0)
-      );
-      
-      if (nextPlayer) {
-        switchPlayerPokemon(nextPlayer);
-
-        const newAvailablePlayerAttacks = nextPlayer.attacks.filter((attack) => attack.uses >0 );
-        const newTotalPlayerAttackUses = newAvailablePlayerAttacks.reduce((total, attack) => total + attack.uses, 0);
-        console.log(`Switched to ${nextPlayer.name} with ${newTotalPlayerAttackUses} total attack uses left.`);
-      } else {
-        setMessage(`No available Pokemon with remaining attacks. You lose!`);
-      }
-      return;
-    };
 
     setTimeout(() => {
       setIsPlayerTurn(true);
     }, 1000);
   };
-
-  const toggleDisable = () => {
-    setPlayerTeam([]);
-    setCheckedPokemons({});
-  };
-
-  useEffect(() => {
-    if (playerTeam.length === 3) {
-      const randomOpponentTeam = [];
-      while (randomOpponentTeam.length < 3) {
-        const randomPokemon = pokemonData[Math.floor(Math.random() * pokemonData.length)];
-        if (!randomOpponentTeam.includes(randomPokemon)) {
-          randomOpponentTeam.push(randomPokemon);
-        }
-      }
-      setOpponentTeam(randomOpponentTeam);
-    }
-  }, [playerTeam]);
 
   return (
     <div className='bg-gray-100 min-h-screen min-w-screen p-0 md:p-8'>
@@ -318,14 +289,14 @@ function Pokemon() {
           <div className="flex flex-wrap gap-4 justify-center">
             <div className='flex flex-col'>
               
-              <h2 className='font-bold text-2xl text-center mx-auto'>Choose your Pokemon</h2>
+              <h2 className='font-bold text-2xl text-center mx-auto'>Select {playerTeam.length}/3 Pokemons</h2>
 
               <div className='mt-4 flex justify-center gap-x-4'>
-                <Button variant="solid" color="danger"  onClick={toggleDisable}>
+                <Button variant="solid" color="danger"  onClick={() => setPlayerTeam([])}>
                   Reset Selection
                 </Button>
 
-                <Button variant="solid" color="primary" onClick={startBattle} disabled={playerTeam.length < 3 || opponentTeam.length < 3}>
+                <Button variant="solid" color="primary" onClick={startBattle} disabled={playerTeam.length < 3}>
                   Start Battle
                 </Button>
               </div>
@@ -344,11 +315,17 @@ function Pokemon() {
                     />
                     <div className='bg-yellow-400 p-0.5 pl-2 rounded-xl'>
                       <Checkbox
-                        checked={checkedPokemons[pokemon.name]}
                         key={pokemon.name}
-                        onChange={() => selectTeam(pokemon)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            choosePokemon(pokemon);
+                          } else {
+                            setPlayerTeam(playerTeam.filter((p) => p.name !== pokemon.name));
+                          }
+                        }}
+                        checked={playerTeam.some((p) => p.name === pokemon.name)}
+                        disabled={playerTeam.length >= 3 && !playerTeam.includes(pokemon)}
                         className='font-semibold mt-[-1rem]'
-                        disabled={playerTeam.length >= 3}
                       >
                         Select
                       </Checkbox>
@@ -390,6 +367,9 @@ function Pokemon() {
 
             {currentPlayerPokemon?.hp > 0 && currentOpponentPokemon?.hp > 0 && (
               <div className="attack-options flex justify-center gap-2">
+                <Button variant='solid' color='danger' onClick={handleRetreat}>
+                  Retreat
+                </Button>
                 {currentPlayerPokemon?.attacks.map((selectedAttack) => (
                   <Button
                     key={selectedAttack?.name}
