@@ -1,6 +1,8 @@
 # React Pokemon
 
-**React Pokemon**: A turn-based Pokemon game developed using React JS. This project was initially guided by the tutorial from (Jutsu Point)[https://www.youtube.com/watch?v=zxZBgPOuh0g], with additional features implemented, such as support for 3 players per team.
+![Screenshot 2025-01-28 183015](https://github.com/user-attachments/assets/6a455da8-cbf6-4a86-bb9f-4446268a158f)
+
+**React Pokemon**: A turn-based Pokemon game developed using React JS. This project was initially guided by the tutorial from [Jutsu Point](https://www.youtube.com/watch?v=zxZBgPOuh0g), while I implemented support for 3 players per team.
 
 ## Features
 
