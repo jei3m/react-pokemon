@@ -123,7 +123,7 @@ function Pokemon() {
     }
 
     if (Math.random() > selectedAttack.accuracy) {
-      const log = `${currentOpponentPokemon} tried to use ${selectedAttack.name} but missed!`;
+      const log = `${currentPlayerPokemon.name} tried to use ${selectedAttack.name} but missed!`;
       missedSound.current.play();
       setMessage(log);
       addLog(log);
